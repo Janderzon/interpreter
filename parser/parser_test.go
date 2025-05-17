@@ -717,3 +717,32 @@ func TestCallExpressionParsing(t *testing.T) {
 	testInfixExpression(t, exp.Arguments[1], 2, "*", 3)
 	testInfixExpression(t, exp.Arguments[2], 4, "+", 5)
 }
+
+func TestCallExpressionParameterParsing(t *testing.T) {
+	tests := []struct {
+		input             string
+		expectedArguments []string
+	}{
+		{input: "add();", expectedArguments: []string{}},
+		{input: "add(x);", expectedArguments: []string{"x"}},
+		{input: "add(x, y, z);", expectedArguments: []string{"x", "y", "z"}},
+	}
+
+	for _, tt := range tests {
+		l := lexer.New(tt.input)
+		p := New(l)
+		program := p.ParseProgram()
+		checkParserErrors(t, p)
+
+		stmt := program.Statements[0].(*ast.ExpressionStatement)
+		call := stmt.Expression.(*ast.CallExpression)
+
+		if len(call.Arguments) != len(tt.expectedArguments) {
+			t.Errorf("length arguments wrong. want %d, got=%d\n", len(tt.expectedArguments), len(call.Arguments))
+		}
+
+		for i, ident := range tt.expectedArguments {
+			testLiteralExpression(t, call.Arguments[i], ident)
+		}
+	}
+}
